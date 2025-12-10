@@ -35,7 +35,14 @@ export default function HomePage() {
       if (reset) {
         setProducts(response.data.results);
       } else {
-        setProducts((prev) => [...prev, ...response.data.results])
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const newProducts = response.data.results.filter(
+            p => !existingIds.has(p.id)
+
+          );
+          return [...prev, ...newProducts];
+        });
       }
 
       setHasMore(response.data.next !== null);

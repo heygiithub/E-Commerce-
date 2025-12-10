@@ -151,7 +151,7 @@ class HomeProductPagination(PageNumberPagination):
 
 class ProductListView(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
-    queryset = Product.objects.filter(is_active=True).select_related('vendor','category').prefetch_related('images')
+    queryset = Product.objects.filter(is_active=True).select_related('vendor','category').prefetch_related('images').order_by('-id')
     serializer_class = ProductSerializer
     pagination_class = HomeProductPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
