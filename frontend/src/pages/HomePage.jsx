@@ -14,6 +14,7 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [category, setCategory] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -23,25 +24,22 @@ export default function HomePage() {
   const fetchProducts = async (reset = false) => {
     let url = `products/?page=${page}&`;
 
-    if (search) url += `search=${search}&`;
+    if (debouncedSearch) url += `search=${debouncedSearch}&`;
     if (category) url += `category=${category}&`;
     if (minPrice) url += `price__gte=${minPrice}&`;
     if (maxPrice) url += `price__lte=${maxPrice}&`;
     if (sort) url += `ordering=${sort}&`;
+    
 
     try {
       const response = await api.get(url);
 
-      if (reset) {
+      if (reset || page === 1) {
         setProducts(response.data.results);
       } else {
         setProducts((prev) => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const newProducts = response.data.results.filter(
-            p => !existingIds.has(p.id)
-
-          );
-          return [...prev, ...newProducts];
+          const merged = [...prev, ...response.data.results];
+          return Array.from(new Map(merged.map(p => p.id))).map(id => merged.find(p => p.id === id));
         });
       }
 
@@ -64,10 +62,13 @@ export default function HomePage() {
 
  
 
-  useEffect(()=>{
-    if (page > 1) fetchCategories();
-    fetchProducts();
-  },[page]);
+  useEffect(() => {
+    fetchCategories();
+  },[]);
+
+  useEffect(() => {
+    fetchProducts(page === 1);
+  })
 
   const handleFilter = () =>{ 
     setPage(1);
@@ -75,6 +76,12 @@ export default function HomePage() {
 
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    },500);
+    return () => clearTimeout(timer);
+  },[search]);
 
 
 
