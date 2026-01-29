@@ -21,10 +21,11 @@ export default function RegisterVendor() {
       alert("Vendor registered successfully!");
       navigate("/login");
 
-  } catch (error){
-    alert("Registration Failed");
-    console.log(error.response?.data);
-  }
+  } catch (error) {
+  console.error("Vendor register error:", error.response?.data);
+  alert(JSON.stringify(error.response?.data, null, 2));
+   }
+
   };
 
 

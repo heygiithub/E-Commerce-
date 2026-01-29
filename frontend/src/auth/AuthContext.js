@@ -8,11 +8,21 @@ export const AuthProvider = ({children}) => {
 
     // restoring user on refresh
     useEffect(() => {
-        const savedUser = JSON.parse(localStorage.getItem("user"));
-        if (savedUser) {
-            setUser(savedUser);
+        try {
+            const savedUser = JSON.parse(localStorage.getItem("user"));
+            if (savedUser) {
+                setUser(savedUser);
         }
+
+    } catch (err){
+        console.error("Failed to parse user",err);
+        setUser(null);
+    } finally{
         setLoading(false);
+
+    }
+       
+        
     }, []);
 
     const login = (data) => {
@@ -43,9 +53,6 @@ export const AuthProvider = ({children}) => {
         localStorage.removeItem("user");
         setUser(null);
     };
-
-    if (loading) 
-        return <div>Loading...</div>;
 
     return (
         <AuthContext.Provider value = {{ user, login, logout,loading}}>

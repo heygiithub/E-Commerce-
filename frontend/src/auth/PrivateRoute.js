@@ -1,27 +1,24 @@
-import { useContext } from "react";
-import {Navigate} from "react-router-dom";
-import { AuthContext } from "./AuthContext";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "./AuthContext";
 
-export default function PrivateRoute ({children,role}) {
-    const {user,loading} = useContext(AuthContext);
+export default function PrivateRoute({ role, children }) {
+  const { user, loading } = useAuth();
 
-    console.log("user in private route:",user);
+  // wait for auth to hydrate
+  if (loading) {
+    return <div className="text-center mt-10">Checking authentication...</div>;
+  }
 
-    // if user objects is undefined 
+  // not logged in
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-    if (loading) {
-        return <div>Loading...</div>
-    }
+  // role not allowed
+  if (role && user.role !== role) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
-    // if user not logged in 
-    if (!user) {
-        return <Navigate to="/login" replace/>;
-    }
-    // role protection
-    if (role && user.role !== role) {
-        return <Navigate to="/" replace/>;
-    }
-    return children;
-
+  // allowed
+  return children;
 }
-    

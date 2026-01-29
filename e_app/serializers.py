@@ -19,11 +19,23 @@ class VendorSerializer(serializers.ModelSerializer):
 class VendorOrderSerializer(serializers.ModelSerializer):
     product = serializers.CharField(source = 'product.name',read_only=True)
     customer = serializers.CharField(source = 'order.customer.username',read_only=True)
-    order_id = serializers.IntegerField(source='order_id')
+    order_id = serializers.IntegerField(source='order.id',read_only=True)
+    total_amount = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
     
     class Meta:
         model = OrderItem
-        fields = ['id','order_id','product','customer','quantity','total_amount','status']
+        fields = ['id','order_id','product','customer','quantity','total_amount','status','price','image']
+        
+    def get_total_amount(self,obj):
+        return obj.quantity * obj.product.price
+    
+    def get_image(self,obj):
+        primary_image = obj.product.images.filter(is_primary=True).first() or obj.product.images.first()
+        if primary_image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(primary_image.image.url)
+        return None
 
 class CustomerSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -38,13 +50,35 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id','name','slug']
         
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(use_url=True)
+    
     class Meta:
         model = ProductImage
         fields = ['id','product','image','is_primary']
         read_only_fields = ['id']
+    
+    def get_image(self,obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
         
+class ProductListSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    class Meta:
+        model = Product 
+        fields = ['id', 'name','slug', 'price', 'image']
+        
+    def get_image(self,obj):
+        primary_image = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if primary_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(primary_image.image.url)
+            return primary_image.image.url
+        return None      
 
-class ProductSerializer(serializers.ModelSerializer):
+class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     vendor = VendorSerializer(read_only=True)
     images = ProductImageSerializer(read_only=True,many=True)
@@ -72,7 +106,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
         
 class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    product = ProductDetailSerializer(read_only=True)
     product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(),source='product',write_only=True)
     cart_id = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all(),source='cart',write_only=True)
     class Meta:
@@ -103,7 +137,7 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ['id','customer','line','city','state','pincode','is_default']
             
 class OrderItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    product = ProductListSerializer(read_only=True)
     subtotal = serializers.SerializerMethodField()
     order_id = serializers.IntegerField(source="order.id",read_only=True)
     

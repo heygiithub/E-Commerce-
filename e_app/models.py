@@ -60,7 +60,7 @@ class Customer(BaseModel):
 # category
 
 class Category(BaseModel):
-    name = models.CharField(max_length=100,unique=True)
+    name = models.CharField(max_length=100,unique=True,db_index=True)
     slug = models.SlugField(max_length=100,unique=True,blank=True)
     
     def save(self,*args,**kwargs):
@@ -85,15 +85,31 @@ PRODUCT_STATUS = (
 )
 
 class Product(BaseModel):
-    vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,related_name='products')
-    category = models.ForeignKey(Category,on_delete=models.SET_NULL,null=True,blank=True)
-    name = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=255,unique=True, blank=True)
+    vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,related_name='products',db_index=True)
+    category = models.ForeignKey(Category,on_delete=models.SET_NULL,db_index=True,null=True,blank=True)
+    name = models.CharField(max_length=255,db_index=True)
+    slug = models.SlugField(max_length=255, blank=True)
     description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=10,decimal_places=2)
+    price = models.DecimalField(max_digits=10,decimal_places=2,db_index=True)
     stock = models.PositiveIntegerField()
     status = models.CharField(max_length=20,choices=PRODUCT_STATUS,default='active')
     is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['price']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['category','price']),
+            
+            ]
+        
+        constraints = [
+            models.UniqueConstraint(
+                fields = ['vendor','slug'],
+                name = 'unique_vendor_product_slug'
+            )
+        ]
     
     def save(self,*args,**kwargs):
         if not self.slug:
@@ -101,7 +117,7 @@ class Product(BaseModel):
             slug = base_slug
             counter = 1 
             # 2 vendors can have same product slug field this will make sure they will not duplicates 
-            while Product.objects.filter(slug=slug).exists():
+            while Product.objects.filter(vendor = self.vendor, slug=slug).exists():
                 slug = f"{base_slug}-{counter}"
                 counter += 1
             self.slug = slug           
@@ -110,14 +126,13 @@ class Product(BaseModel):
     def __str__(self):
         return f"{self.name} ({self.vendor.shop_name})"
     
-    class Meta:
-        indexes = [models.Index(fields=['slug'])]
+    
         
 # ProductImage
 class ProductImage(BaseModel):
-    product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name="images")
+    product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name="images",db_index=True)
     image = models.ImageField(upload_to='products/')
-    is_primary = models.BooleanField(default=False)
+    is_primary = models.BooleanField(default=False,db_index=True)
     
     def __str__(self):
         return f"Image of {self.product.name}"
@@ -235,6 +250,8 @@ class Address(BaseModel):
     
     def __str__(self):
         return f"{self.line}, {self.city}"
+    
+# Signals
     
 @receiver(post_save,sender=Customer)
 def  create_cart_for_customer(sender,instance,created,**kwargs):

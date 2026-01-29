@@ -1,152 +1,162 @@
-import React, {useEffect,useState,} from "react";
+import { useEffect, useState } from "react";
 import { getVendorDashboard } from "../../api/vendor";
-import { Navigate, useNavigate } from "react-router-dom";
-const Dashboard = () => {
-    const [data, setData] = useState(null);
-    const [loading,setLoading] = useState(true);
-    const navigate = useNavigate();
+import { useNavigate } from "react-router-dom";
 
-    useEffect(() => {
-        loadDashboard();
-    },[]);
+export default function Dashboard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-    const loadDashboard = async () => {
-        try {
-            const response = await getVendorDashboard();
-            console.log("Dashboard api response:",response);
-            setData(response.data);
-        } catch (error) {
-            console.error("Dashboard api error:",error);
-        } finally {
-            setLoading(false);
-        }
-    };
-    if (loading || !data) return <h2 className="text-center mt-10">Loading...</h2>;
+  useEffect(() => {
+    loadDashboard();
+  }, []);
 
-    return (
-       <div className="max-w-7xl mx-auto p-6">
-    <h1 className="text-2xl font-bold mb-6">Vendor Dashboard</h1>
+  const loadDashboard = async () => {
+    try {
+      const res = await getVendorDashboard();
+      setData(res.data);
+    } catch (err) {
+      console.error("Dashboard error", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    {/* Manage Buttons */}
-    <div className="flex gap-4 mb-6">
-      <button
-        onClick={() => navigate("/vendor/products")}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Manage Products
-      </button>
+  if (loading) {
+    return <div className="p-6 text-gray-600">Loading dashboard…</div>;
+  }
 
-      <button
-        onClick={() => navigate("/vendor/orders")}
-        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-      >
-        Manage Orders
-      </button>
-    </div>
+  return (
+    <div className="space-y-10">
 
-    {/* Stats */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div className="bg-blue-600 text-white rounded-lg p-4 shadow text-center">
-        <p className="text-xl font-bold">{data.stats.total_products}</p>
-        <p>Products</p>
+      {/* ===== HEADER ===== */}
+      <div>
+        <h1 className="text-2xl font-bold">Vendor Dashboard</h1>
+        <p className="text-gray-500 mt-1">
+          Overview of your store performance
+        </p>
       </div>
 
-      <div className="bg-indigo-600 text-white rounded-lg p-4 shadow text-center">
-        <p className="text-xl font-bold">{data.stats.total_orders}</p>
-        <p>Total Orders</p>
+      {/* ===== STATS ===== */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <StatCard title="Products" value={data.stats.total_products} />
+        <StatCard title="Total Orders" value={data.stats.total_orders} />
+        <StatCard title="Pending Orders" value={data.stats.pending_orders} />
+        <StatCard title="Completed Orders" value={data.stats.completed_orders} />
       </div>
 
-      <div className="bg-yellow-400 text-black rounded-lg p-4 shadow text-center">
-        <p className="text-xl font-bold">{data.stats.pending_orders}</p>
-        <p>Pending</p>
-      </div>
+      {/* ===== QUICK ACTIONS ===== */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
 
-      <div className="bg-green-600 text-white rounded-lg p-4 shadow text-center">
-        <p className="text-xl font-bold">{data.stats.completed_orders}</p>
-        <p>Completed</p>
-      </div>
-    </div>
-
-    {/* Recent Products */}
-    <h2 className="text-xl font-semibold mb-3">Recent Products</h2>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      {data.recent_products.map((p) => (
-        <div
-          key={p.id}
-          className="bg-white shadow rounded-lg p-3 text-center"
-        >
-          <img
-            src={p.images?.[0]?.image}
-            alt={p.name}
-            className="w-20 h-20 object-cover rounded mx-auto"
+        <div className="flex flex-wrap gap-4">
+          <PrimaryButton
+            label="Add Product"
+            onClick={() => navigate("/vendor/products/add")}
           />
-          <p className="font-semibold mt-2">{p.name}</p>
-          <p className="text-sm text-gray-600">₹{p.price}</p>
+          <SecondaryButton
+            label="Manage Products"
+            onClick={() => navigate("/vendor/products")}
+          />
+          <SecondaryButton
+            label="View Orders"
+            onClick={() => navigate("/vendor/orders")}
+          />
         </div>
-      ))}
-    </div>
+      </div>
 
-    {/* Recent Orders */}
-    <h2 className="text-xl font-semibold mb-3">Recent Orders</h2>
-    <div className="bg-white rounded-lg shadow p-4 mb-8">
-      {data.recent_orders.length === 0 ? (
-        <p className="text-gray-600">No recent orders</p>
-      ) : (
-        data.recent_orders.map((o) => (
-          <div
-            key={o.id}
-            className="flex justify-between border-b py-2 items-center"
+      {/* ===== RECENT ORDERS ===== */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Recent Orders</h2>
+          <button
+            onClick={() => navigate("/vendor/orders")}
+            className="text-sm text-blue-600 hover:underline"
           >
-            <p>{o.product?.name}</p>
-            <p className="font-medium">Qty: {o.quantity}</p>
-            <span
-              className={`px-3 py-1 rounded text-sm font-bold ${
-                o.status === "DELIVERD"
-                  ? "bg-green-600 text-white"
-                  : "bg-yellow-500 text-black"
-              }`}
-            >
-              {o.status}
-            </span>
+            View all
+          </button>
+        </div>
+
+        {data.recent_orders.length === 0 ? (
+          <p className="text-gray-500">No recent orders</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b text-gray-600">
+                <tr>
+                  <th className="py-2">Product</th>
+                  <th>Qty</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recent_orders.map(order => (
+                  <tr key={order.id} className="border-b last:border-0">
+                    <td className="py-3">{order.product?.name}</td>
+                    <td>{order.quantity}</td>
+                    <td>
+                      <StatusBadge status={order.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))
-      )}
+        )}
+      </div>
+
     </div>
-
-    {/* Pending Orders */}
-    <h3 className="text-lg font-semibold text-orange-500 mb-2">Pending Orders</h3>
-    <ul className="space-y-2 mb-8">
-      {data.pending_orders.length > 0 ? (
-        data.pending_orders.map((o) => (
-          <li key={o.id} className="flex gap-2">
-            <span>{o.product?.name}</span>
-            <span>Qty: {o.quantity}</span>
-            <strong className="text-orange-500">{o.status}</strong>
-          </li>
-        ))
-      ) : (
-        <li className="text-gray-600">No pending orders</li>
-      )}
-    </ul>
-
-    {/* Completed Orders */}
-    <h3 className="text-lg font-semibold text-green-600 mb-2">Completed Orders</h3>
-    <ul className="space-y-2">
-      {data.completed_orders.length > 0 ? (
-        data.completed_orders.map((o) => (
-          <li key={o.id} className="flex gap-2">
-            <span>{o.product?.name}</span>
-            <span>Qty: {o.quantity}</span>
-            <strong className="text-green-600">{o.status}</strong>
-          </li>
-        ))
-      ) : (
-        <li className="text-gray-600">No completed orders</li>
-      )}
-    </ul>
-
-  </div>
   );
-    
-};
-export default Dashboard;
+}
+
+/* ===== UI COMPONENTS ===== */
+
+function StatCard({ title, value }) {
+  return (
+    <div className="bg-white shadow rounded-lg p-5 text-center">
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <p className="text-sm text-gray-500 mt-1">{title}</p>
+    </div>
+  );
+}
+
+function PrimaryButton({ label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800"
+    >
+      {label}
+    </button>
+  );
+}
+
+function SecondaryButton({ label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="border border-gray-300 px-5 py-2 rounded hover:bg-gray-100"
+    >
+      {label}
+    </button>
+  );
+}
+
+function StatusBadge({ status }) {
+  const colors = {
+    PENDING: "bg-yellow-100 text-yellow-800",
+    PROCESSING: "bg-blue-100 text-blue-800",
+    DELIVERD: "bg-green-100 text-green-800",
+    CANCELLED: "bg-red-100 text-red-800",
+  };
+
+  return (
+    <span
+      className={`px-2 py-1 rounded text-xs font-medium ${
+        colors[status] || "bg-gray-100 text-gray-700"
+      }`}
+    >
+      {status}
+    </span>
+  );
+}

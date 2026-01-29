@@ -17,24 +17,23 @@ import EditProduct from "./pages/vendor/EditProduct";
 import VendorOrders from "./pages/vendor/Orders";
 import AddProductImages from "./pages/vendor/AddProductImages";
 import ProductDetail from "./pages/ProductDetail";
-import Navbar from "./componants/Navbar";
+import CustomerLayout from "./layouts/CustomerLayout";
+import VendorLayout from "./layouts/VendorLayout";
+
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Navbar/>
-
 
         <Routes>
-        
+           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register/customer" element={<RegisterCustomer />} />
           <Route path="/register/vendor" element={<RegisterVendor />} />
-          <Route path="/" element={<HomePage/>} />
-          <Route path="/product/:id" element={<ProductDetail/>}/>
-          <Route path="/vendor/products/:product_id/images" element={<AddProductImages/>} />
-        
+          <Route path="/" element={<CustomerLayout><HomePage/></CustomerLayout>} />
+          <Route path="/product/:slug" element={<ProductDetail/>}/>
+          <Route path="/vendor/products/:product_id/images" element={<VendorLayout><AddProductImages/></VendorLayout>}/>
 
           {/* Protected Routes */}
           <Route path="/customer" element={
@@ -45,58 +44,76 @@ export default function App() {
 
           <Route path="/vendor/dashboard" element={
             <PrivateRoute role="vendor">
-              <Dashboard />
+             <VendorLayout>
+               <Dashboard />
+             </VendorLayout>
             </PrivateRoute>
           }/>
 
           <Route path="/cart" element={
             <PrivateRoute role="customer">
-                <CartPage/>
+               <CustomerLayout>
+                 <CartPage/>
+               </CustomerLayout>
             </PrivateRoute>
           }/>
 
           <Route path="/order" element={
             <PrivateRoute role="customer">
-              <OrderPage/>
+              <CustomerLayout>
+                <OrderPage/>
+              </CustomerLayout>
             </PrivateRoute>
           }/>
 
-          <Route path="/order/:id" element={
+          <Route path="/orders" element={
             <PrivateRoute role="customer">
-              <OrderPage/>
+              <CustomerLayout>
+                <CustomerDashboard/>
+              </CustomerLayout>
             </PrivateRoute>
           }/>
 
           <Route path="/address" element={
             <PrivateRoute role="customer">
-              <AddressPage/>
+              <CustomerLayout>
+                <AddressPage/>
+              </CustomerLayout>
             </PrivateRoute>
           }/>
 
           <Route path="/vendor/products" element={
             <PrivateRoute role ="vendor">
-              <VendorProducts/>
+              <VendorLayout>
+                <VendorProducts/>
+              </VendorLayout>
             </PrivateRoute>
           }
           />
 
           <Route path="/vendor/products/add" element={
             <PrivateRoute role="vendor">
-              <AddProduct/>
+              <VendorLayout>
+                <AddProduct/>
+              </VendorLayout>
             </PrivateRoute>
           }
           />
 
           <Route path="/vendor/products/:id/edit" element={
             <PrivateRoute role="vendor">
-              <EditProduct/>
+              <VendorLayout>
+                <EditProduct/>
+              </VendorLayout>
             </PrivateRoute>
           }
           />
 
           <Route path="/vendor/orders" element={
             <PrivateRoute role= "vendor">
-              <VendorOrders/>
+              <VendorLayout>
+                <VendorOrders/>
+              </VendorLayout>
             </PrivateRoute>
           }
           />

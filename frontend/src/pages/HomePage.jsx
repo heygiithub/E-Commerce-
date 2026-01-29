@@ -1,97 +1,145 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
+import {useAuth} from "../auth/AuthContext";
 import api from "../api/axios";
 import "../App.css";
 
 export default function HomePage() {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const {user} = useAuth();
+
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
-  const [page,setPage] = useState(1);
+
+  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [category, setCategory] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("");
 
-
-  const fetchProducts = async (reset = false) => {
-    let url = `products/?page=${page}&`;
-
-    if (debouncedSearch) url += `search=${debouncedSearch}&`;
-    if (category) url += `category=${category}&`;
-    if (minPrice) url += `price__gte=${minPrice}&`;
-    if (maxPrice) url += `price__lte=${maxPrice}&`;
-    if (sort) url += `ordering=${sort}&`;
-    
-
-    try {
-      const response = await api.get(url);
-
-      if (reset || page === 1) {
-        setProducts(response.data.results);
-      } else {
-        setProducts((prev) => {
-          const merged = [...prev, ...response.data.results];
-          return Array.from(new Map(merged.map(p => p.id))).map(id => merged.find(p => p.id === id));
-        });
-      }
-
-      setHasMore(response.data.next !== null);
-    } catch (error) {
-      console.log("failed to fetch products:",error);
-    } finally {
-      setLoading(false);
+  // block access for vendors
+  useEffect(()=> {
+    if (user?.role === "vendor"){
+      navigate("/vendor/dashboard",{replace:true});
     }
-  };
+  }, [user, navigate]);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get("categories/");
-      setCategories(response.data);
-    } catch (error) {
-      console.log ("failed to fethc categories",error);
-    }
-  };
-
- 
-
-  useEffect(() => {
-    fetchCategories();
-  },[]);
-
-  useEffect(() => {
-    fetchProducts(page === 1);
-  })
-
-  const handleFilter = () =>{ 
-    setPage(1);
-    fetchProducts(true);
-
-  };
-
+  //Debounce Search Input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-    },500);
+      setPage(1); 
+    }, 500);
+
     return () => clearTimeout(timer);
-  },[search]);
+  }, [search]);
 
 
+  //Fetch Categories (runs only ONCE)
+  useEffect(() => {
+    if (user?.role === "vendor") return; 
 
-if (loading) return <h2 className="text-center mt-10">Loading products...</h2>;
+    async function loadCategories() {
+      try {
+        const res = await api.get("categories/");
+        setCategories(res.data);
+      } catch (err) {
+        console.log("Failed to fetch categories", err);
+      }
+    }
+    loadCategories();
+  }, [user]);
+
+
+  //Build URL (NOT in dependencies!)
+  const buildUrl = () => {
+    const params = new URLSearchParams();
+    params.append("page", page);
+
+    if (debouncedSearch) params.append("search", debouncedSearch);
+    if (category) params.append("category", category);
+    if (minPrice) params.append("price__gte", minPrice);
+    if (maxPrice) params.append("price__lte", maxPrice);
+    if (sort) params.append("ordering", sort);
+
+    return `products/?${params.toString()}`;
+  };
+
+
+  //Fetch Products (NO infinite loop)
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const url = buildUrl();
+      const res = await api.get(url);
+
+      if (page === 1) {
+        setProducts(res.data.results);
+      } else {
+        setProducts(prev => {
+          const merged = [...prev, ...res.data.results];
+          const unique = Array.from(new Map(merged.map(p => [p.id, p])).values());
+          return unique;
+        });
+      }
+
+      setHasMore(res.data.next !== null);
+    } catch (err) {
+      if (err.response?.status ===404) {
+        setHasMore(false); // stop scroll when no more pages
+      } else {
+        console.log("Failed to fetch products:", err);
+
+      } 
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, category, minPrice, maxPrice, sort]);
+
+
+  //Auto fetch when filters or page change
+  useEffect(() => {
+    if (user?.role === "vendor") return;
+    fetchProducts();
+  }, [fetchProducts,user]);
+
+
+  //Reset infinite scroll when filters change
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    }, [debouncedSearch, category, minPrice, maxPrice, sort]);
+
+
+  //Infinite Scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!hasMore || loading) return;
+
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 200 >=
+        document.documentElement.offsetHeight
+      ) {
+        setPage(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasMore, loading]);
+
 
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">Latest Products</h2>
 
-      {/* Search & Filters */}
+      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6 items-center">
         <input
           type="text"
@@ -108,9 +156,7 @@ if (loading) return <h2 className="text-center mt-10">Loading products...</h2>;
         >
           <option value="">All Categories</option>
           {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
+            <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
 
@@ -136,57 +182,32 @@ if (loading) return <h2 className="text-center mt-10">Loading products...</h2>;
           onChange={(e) => setSort(e.target.value)}
         >
           <option value="">Sort</option>
-          <option value="price">Price: Low to High</option>
-          <option value="-price">Price: High to Low</option>
+          <option value="price">Price: Low → High</option>
+          <option value="-price">Price: High → Low</option>
           <option value="-created_at">Newest First</option>
         </select>
-
-        <button
-          onClick={handleFilter}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Apply
-        </button>
       </div>
 
-      {/* Products Grid */}
+      {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {products.map((p) => (
           <div
             key={p.id}
-            onClick={() => navigate(`/product/${p.id}`)}
+            onClick={() => navigate(`/product/${p.slug}`)}
             className="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition"
           >
             <img
-              src={p.images?.[0]?.image}
+              src={p.image || "/placeholder.png"}
               alt={p.name}
               className="w-full h-48 object-cover rounded-md"
             />
-
             <h3 className="font-semibold text-lg mt-3">{p.name}</h3>
             <p className="text-gray-600">₹{p.price}</p>
-
-            <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-              View Details
-            </button>
-
-           
           </div>
         ))}
       </div>
 
-      {products.length === 0 && (
-        <p className="text-center text-gray-600 mt-10">No products found</p>
-      )}
-
-       {
-        hasMore && (
-          <button
-          onClick={()=> setPage(prev=> prev + 1)} className="block mx-auto mt-6 bg-gray-700 text-white px-6 py-2 rounded hover:bg-gray-900">
-            Load More
-          </button>
-        )
-      }
+      {loading && <p className="text-center mt-5">Loading more...</p>}
     </div>
-)
-};
+  );
+}

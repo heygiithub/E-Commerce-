@@ -11,10 +11,13 @@ from .models import (User,Product,Payment,ProductImage,Order,OrderItem,Address,C
 from decimal import Decimal
 from rest_framework.parsers import MultiPartParser,FormParser
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F,Prefetch
 from rest_framework.exceptions import PermissionDenied
-from . serializers import VendorProductSerializer,CustomerRegisterSerializer,LoginSerializer,CartSerializer,VendorRegisterSerializer,UserSerializer,OrderSerializer,VendorSerializer,VendorOrderSerializer,AddressSerializer,PaymentSerializer,ProductSerializer,CartItemSerializer,CategorySerializer,CustomerSerializer,OrderItemSerializer,ProductImageSerializer
+from . serializers import VendorProductSerializer,CustomerRegisterSerializer,LoginSerializer,CartSerializer,VendorRegisterSerializer,UserSerializer,OrderSerializer,VendorSerializer,VendorOrderSerializer,AddressSerializer,PaymentSerializer,ProductListSerializer,ProductDetailSerializer,CartItemSerializer,CategorySerializer,CustomerSerializer,OrderItemSerializer,ProductImageSerializer
 from rest_framework.pagination import PageNumberPagination
+from django.core.cache import cache
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 # regiser vendor and customer
 class RegisterVendorView(APIView):
@@ -60,7 +63,7 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             vendor=self.request.user.vendor_profile).prefetch_related("images")
     
     def list(self,request,*args,**kwargs):
-        serializer = ProductSerializer(
+        serializer = ProductListSerializer(
             self.get_queryset(),many=True,context={'request':request}
         )
         return Response(serializer.data)
@@ -82,10 +85,13 @@ class ProductImageViewSet(viewsets.ModelViewSet):
             qset = qset.filter(product_id=product_id)
         return qset
     
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context 
+    
     
     def perform_create(self, serializer):
-        # product_id = self.kwargs.get('product_id')
-        # product = get_object_or_404(Product, pk=product_id,vendor=self.request.user.vendor_profile)
         product = serializer.validated_data["product"]
         if product.vendor != self.request.user.vendor_profile:
             raise PermissionDenied("You do not own this product.")
@@ -100,7 +106,7 @@ class ProductImageViewSet(viewsets.ModelViewSet):
         # only one primary image per product
         instance = self.get_object()
         if self.request.data.get("is_primary")==True:
-            ProductImage.objects.filter(product=instance.product).update(is_primary=false)
+            ProductImage.objects.filter(product=instance.product).update(is_primary=False)
         serializer.save()
 
 # vendor order view
@@ -151,16 +157,22 @@ class HomeProductPagination(PageNumberPagination):
 
 class ProductListView(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
-    queryset = Product.objects.filter(is_active=True).select_related('vendor','category').prefetch_related('images').order_by('-id')
-    serializer_class = ProductSerializer
+    queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related('images').order_by('-created_at')
     pagination_class = HomeProductPagination
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'description', 'vendor__shop_name', 'category__name']
+    filter_backends = [DjangoFilterBackend,filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
     ordering_fields = ['price', 'created_at']
     filterset_fields = {
         'category':['exact'],
         'price':['gte','lte'],
     }
+    lookup_field = "slug"
+    lookup_url_kwarg = "slug"
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ProductListSerializer
+        return ProductDetailSerializer
     
    
    
@@ -278,7 +290,7 @@ class OrderView(APIView):
             with transaction.atomic():
                 order = Order.objects.create(customer=customer, total_amount=Decimal('0'))
                 for product, qty in validated:
-                    OrderItem.objects.create(order=order, product=product, quantity=qty, price=product.price)
+                    OrderItem.objects.create(order=order, product=product,vendor=product.vendor, quantity=qty, price=product.price)
                 # ensure totals are recalculated and saved
                 order.update_total()
                 # Optionally decrement stock here (commented):
@@ -365,18 +377,20 @@ class VendorDashboardView(APIView):
 
     def get(self, request):
         vendor = request.user.vendor_profile
-
-        # Stats based on OrderItems (NOT vendor on OrderItem)
-        total_products = Product.objects.filter(vendor=vendor).count()
-        total_orders = OrderItem.objects.filter(vendor=vendor).count()
-        pending_orders = OrderItem.objects.filter(vendor=vendor).exclude(status__in=["DELIVERD","CANCELLED"]).count()
-        completed_orders = OrderItem.objects.filter(vendor=vendor, status="DELIVERD").count()
+        
+        # cache 
+        cache_key = f"vendor_dashboard_{vendor.id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        
 
         stats = {
-            "total_products": total_products,
-            "total_orders": total_orders,
-            "pending_orders": pending_orders,
-            "completed_orders": completed_orders,
+            "total_products": Product.objects.filter(vendor=vendor).count(),
+            "total_orders":OrderItem.objects.filter(product__vendor=vendor).count(),
+            "pending_orders": OrderItem.objects.filter(product__vendor=vendor).exclude(status__in=["DELIVERD","CANCELLED"]).count(),
+            "completed_orders":OrderItem.objects.filter(product__vendor=vendor, status="DELIVERD").count(),
+            
         }
 
         # Recent products with images
@@ -384,7 +398,7 @@ class VendorDashboardView(APIView):
             vendor=vendor
         ).prefetch_related("images").order_by("-created_at")[:5]
 
-        recent_products_data = ProductSerializer(
+        recent_products_data = ProductListSerializer(
             recent_products, many=True, context={"request": request}
         ).data
 
@@ -414,14 +428,19 @@ class VendorDashboardView(APIView):
         completed_orders_data = OrderItemSerializer(
             completed_orders,many=True,context={"request":request}
         ).data
-
-        return Response({
+        
+        data = {
             "stats": stats,
             "recent_products": recent_products_data,
             "recent_orders": recent_orders_data,
             "pending_orders":pending_orders_data,
             "completed_orders":completed_orders_data,
-        })
+            
+        }
+        
+        cache.set(cache_key,data,60)
+
+        return Response(data)
 
 
         
@@ -429,7 +448,7 @@ class VendorDashboardView(APIView):
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = []   
+    permission_classes = [AllowAny]   
         
        
 

@@ -9,7 +9,7 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const location = useLocation();
    // handling query parameters 
-  const productId = new URLSearchParams(location.search).get("product");
+  const productSlug= new URLSearchParams(location.search).get("product");
   
   const [product, setProduct] = useState(null);
   const [cartItems, setCartItems] = useState([]);
@@ -35,8 +35,8 @@ export default function OrderPage() {
         setAddress(addressResponse.data[0]);
 
         // order now 
-        if (productId) {
-          const productResponse = await api.get(`products/${productId}/`);
+        if (productSlug) {
+          const productResponse = await api.get(`products/${productSlug}/`);
           setProduct(productResponse.data);
           setTotal(productResponse.data.price);
         }
@@ -62,12 +62,13 @@ export default function OrderPage() {
 const handlePlaceOrder = async () => {
   try {
     // order now 
-    if (productId) {
+    if (productSlug) {
       const response = await api.post("customer/orders/", {
         address_id : address.id,
         items:[
           { 
-            product_id:product.id,
+            product_slug:product.slug,
+            product_id : product.id,
             quantity:1
           },
         ],
@@ -106,7 +107,7 @@ return (
     <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
 
     {/* ORDER NOW PRODUCT */}
-    {productId && product && (
+    {productSlug && product && (
       <div className="bg-white shadow-md p-4 rounded-lg flex items-center gap-4 mb-4">
         <img
           src={product.images?.[0]?.image}
@@ -122,7 +123,7 @@ return (
     )}
 
     {/* CART PRODUCTS CHECKOUT */}
-    {!productId && cartItems.length > 0 && (
+    {!productSlug && cartItems.length > 0 && (
       <div className="space-y-3">
         {cartItems.map((item) => (
           <div

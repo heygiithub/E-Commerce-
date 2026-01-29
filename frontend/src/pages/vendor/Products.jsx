@@ -5,6 +5,7 @@ import api from "../../api/axios";
 export default function VendorProducts() {
   const [products, setProducts] = useState([]);
   const navigate = useNavigate();
+  const BACKEND_URL = "http://127.0.0.1:8000";
 
   const fetchProducts = async () => {
     try {
@@ -49,9 +50,7 @@ return (
     ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map((p) => {
-          const primaryImage =
-            p.images?.find((img) => img.is_primary)?.image ||
-            (p.images?.length > 0 ? p.images[0].image : null);
+          const primaryImage = p.image;
 
           return (
             <div
@@ -59,7 +58,7 @@ return (
               className="bg-white shadow-md rounded-lg p-4 flex flex-col items-center hover:shadow-lg transition"
             >
               <img
-                src={primaryImage || "/placeholder.jpg"}
+                src={primaryImage|| "/placeholder.jpg"}
                 alt={p.name}
                 className="w-28 h-28 object-cover rounded-md mb-3"
               />
