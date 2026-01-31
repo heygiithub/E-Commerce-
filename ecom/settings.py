@@ -185,11 +185,11 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 
 # CORS HEADERS 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = ["https://frontend-uctm.onrender.com",]
 CORS_ALLOW_CREDENTIALS = True
 
 # LOGGING FOR DUBUGGING
-LOGGINNG = {
+LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
