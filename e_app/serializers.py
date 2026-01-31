@@ -186,8 +186,8 @@ class VendorRegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email already exists")
         return value
     
-    def valildate_shop_name(self,value):
-        if Vendor.objects.filter(shop_name=value).exits():
+    def validate_shop_name(self,value):
+        if Vendor.objects.filter(shop_name=value).exists():
             raise serializers.ValidationError("shop name already exists")
         return value
     
@@ -215,7 +215,7 @@ class VendorRegisterSerializer(serializers.Serializer):
             description = description,
         )
         
-        return vendor
+        return user
 
 # customer registeration
 
@@ -255,7 +255,7 @@ class CustomerRegisterSerializer(serializers.Serializer):
             phone = phone 
         )
         
-        return customer 
+        return user 
 
 # login serializer
 class LoginSerializer(serializers.Serializer):
@@ -268,8 +268,9 @@ class LoginSerializer(serializers.Serializer):
         if not username  or not password:
             raise serializers.ValidationError("Username and password are required")
         
-        user = authenticate(username=username,password=password)
-        if user is None:
+        user = User.objects.filter(username=username).first()
+        
+        if user is None or not user.check_password(password):
             raise serializers.ValidationError("Invalid Username or Password")
         
         # find user role

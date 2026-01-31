@@ -1,8 +1,7 @@
 import axios from "axios";
-import { href } from "react-router-dom";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL + "/api/",
+  baseURL: import.meta.env.VITE_API_URL + "/api/",
 });
 
 api.interceptors.request.use((config) => {
@@ -10,7 +9,8 @@ api.interceptors.request.use((config) => {
 
   const PUBLIC_PATHS= [
     "products/",
-    "register/",
+    "register/vendor/",
+    "register/customer/",
     "login/",
     "token/"
   ];
