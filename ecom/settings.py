@@ -90,11 +90,25 @@ WSGI_APPLICATION = 'ecom.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL',default = 'mysql://root:Root@123&123@127.0.0.1:3306/mysql_db'),
-        conn_max_age=600 
-    )
+    'default':{
+        'ENGINE':'django.db.backends.mysql',
+        'NAME':config('DB_NAME'),
+        'USER':config('DB_USER'),
+        'PASSWORD':config('DB_PASSWORD'),
+        'HOST':config('DB_HOST',DEFAULT='localhost'),
+        'PORT':config('DB_PORT',DEFAULT='3306'),
+        
+    }
 }
+
+# Render PostgreSQL Override(production)
+
+if os.environ.get('DATABASE_URL'):
+    DATABASES["default"] = dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 # AUTHENTICATION
 AUTH_USER_MODEL = 'e_app.User'
