@@ -2,7 +2,7 @@ import axios from "axios";
 import { href } from "react-router-dom";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api/",
+  baseURL: process.env.REACT_APP_API_URL + "/api/",
 });
 
 api.interceptors.request.use((config) => {
@@ -42,7 +42,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          "http://127.0.0.1:8000/api/token/refresh/",
+          process.env.REACT_APP_API_URL + "/api/token/refresh/",
           {refresh: refreshToken}
         );
 
