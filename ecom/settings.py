@@ -188,6 +188,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 CORS_ALLOWED_ORIGINS = ["https://frontend-uctm.onrender.com",]
 CORS_ALLOW_CREDENTIALS = True
 
+
+# csrf settings
+CSRF_TRUSTED_ORIGINS = ["https://frontend-uctm.onrender.com",]
+
 # LOGGING FOR DUBUGGING
 # LOGGINNG = {
 #     'version': 1,
