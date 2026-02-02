@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
 export default function AddProduct() {
-  const [categories, setCatgories] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     price: "",
     stock: "",
+    category: "",
     description: "",
     
   });
@@ -16,8 +17,16 @@ export default function AddProduct() {
 
   useEffect(() => {
     const fetchCategories = async() => {
+      try {
       const res = await api.get("categories/");
-      setCatgories(res.data);
+      console.log("Categories fetched:",res.data);
+      // handling both paginated and non-paginated responses
+      const categoryList = res.data.results || res.data;
+      setCategories(categoryList);
+      console.log("Categories set in state:", categoryList);
+      } catch(err){
+        console.error("Error fetching categories:", err.response?.data ||err);
+      }
     };
     fetchCategories();
   }, []);
