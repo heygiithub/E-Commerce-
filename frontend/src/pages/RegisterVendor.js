@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import api from "../api/axios";
-import { Navigate,Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function RegisterVendor() {
   const [formData, setFormData] = useState({
