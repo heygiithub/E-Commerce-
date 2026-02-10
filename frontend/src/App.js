@@ -118,10 +118,6 @@ export default function App() {
           }
           />
 
-          console.log("API URL =", process.env.REACT_APP_API_URL);
-
-
-
         </Routes>
       </AuthProvider>
     </BrowserRouter>
