@@ -9,6 +9,7 @@ api.interceptors.request.use((config) => {
 
   const PUBLIC_PATHS= [
     "products/",
+    "categories/",
     "register/vendor/",
     "register/customer/",
     "login/",

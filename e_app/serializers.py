@@ -50,7 +50,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id','name','slug']
         
 class ProductImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(use_url=True)
+    image = serializers.SerializerMethodField()
     
     class Meta:
         model = ProductImage
@@ -60,8 +60,16 @@ class ProductImageSerializer(serializers.ModelSerializer):
     def get_image(self,obj):
         request = self.context.get('request')
         if obj.image and request:
+            # return full absoluteurl 
             return request.build_absolute_uri(obj.image.url)
         return None
+    
+    def to_internal_value(self,data):
+        # allow image to upload while get_image handles read 
+        internal = super().to_internal_value(data)
+        return internal
+    
+    
         
 class ProductListSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
