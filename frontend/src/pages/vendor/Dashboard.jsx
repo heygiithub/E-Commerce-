@@ -22,9 +22,8 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-gray-600">Loading dashboard…</div>;
-  }
+ if (loading) return <div className="p-6 text-gray-600">Loading dashboard…</div>;
+if (!data) return <div className="p-6 text-red-500">Failed to load dashboard. Please refresh.</div>;
 
   return (
     <div className="space-y-10">
