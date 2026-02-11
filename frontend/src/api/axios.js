@@ -38,8 +38,14 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem("refresh_token");
 
-      if (!refreshToken)
+      if (!refreshToken){
+        // clean logout without wiping everything
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
         return Promise.reject(error);
+      }
 
       try {
         const res = await axios.post(
@@ -53,9 +59,12 @@ api.interceptors.response.use(
           return api(originalRequest);
 
       } catch (refreshError) {
-        console.log("Refresh token expired");
-        localStorage.clear();
+
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
         window.location.href = "/login";
+        return Promise.reject(refreshError);
       }
     }
 
