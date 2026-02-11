@@ -142,6 +142,13 @@ SIMPLE_JWT = {
         
 }
 
+# Cache configuration (using in-memory cache for simplicity, can be replaced with Redis or Memcached in production)
+CACHES = {
+    "default": {
+        "BACKEND":"django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
