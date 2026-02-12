@@ -59,7 +59,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
     
     def get_image(self,obj):
         request = self.context.get('request')
-        if obj.image and request:
+        if obj.image and obj.image.name and request:
             # return full absoluteurl 
             return request.build_absolute_uri(obj.image.url)
         return None
@@ -79,7 +79,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         
     def get_image(self,obj):
         primary_image = obj.images.filter(is_primary=True).first() or obj.images.first()
-        if primary_image:
+        if primary_image and primary_image.image and primary_image.image.name:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(primary_image.image.url)
