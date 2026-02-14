@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
+import placeholder from "../../assets/placeholder.png"
 
 export default function CustomerDashboard() {
   const [orders, setOrders] = useState([]);
@@ -61,8 +62,13 @@ return (
               <tr key={o.id} className="border-b hover:bg-gray-100">
                 <td className="p-3 flex items-center gap-3">
                   <img
-                    src={o.product?.images?.[0]?.image}
+                    src={o.product?.images?.[0]?.image || placeholder}
                     alt={o.product?.name}
+                    loading="lazy"
+                    onError={(e)=>{
+                      e.target.onerror = null;
+                      e.target.src = placeholder;
+                    }}
                     className="w-12 h-12 object-cover rounded"
                   />
                   {o.product?.name}

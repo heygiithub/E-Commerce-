@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import placeholder from "../assets/placeholder.png";
 
 export default function VendorProducts() {
   const [products, setProducts] = useState([]);
@@ -58,8 +59,13 @@ return (
               className="bg-white shadow-md rounded-lg p-4 flex flex-col items-center hover:shadow-lg transition"
             >
               <img
-                src={primaryImage|| "/placeholder.jpg"}
+                src={primaryImage|| placeholder}
                 alt={p.name}
+                loading="lazy"
+                onError={(e)=>{
+                  e.target.onerror = null;
+                  e.target.src = placeholder;
+                }}
                 className="w-28 h-28 object-cover rounded-md mb-3"
               />
 

@@ -2,7 +2,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
-
+import placeholder from "../../assets/placeholder.png";
 
 export default function OrderPage() {
   const { user } = useAuth();
@@ -110,8 +110,13 @@ return (
     {productSlug && product && (
       <div className="bg-white shadow-md p-4 rounded-lg flex items-center gap-4 mb-4">
         <img
-          src={product.images?.[0]?.image}
+          src={product.images?.[0]?.image || placeholder}
           alt={product.name}
+          loading="lazy"
+          onError={(e)=>{
+            e.target.onerror = null;
+            e.target.src = placeholder;
+          }}
           className="w-20 h-20 object-cover rounded"
         />
         <div>
@@ -132,8 +137,13 @@ return (
           >
             <div className="flex gap-3 items-center">
               <img
-                src={item.product?.images?.[0]?.image}
+                src={item.product?.images?.[0]?.image || placeholder}
                 alt={item.product.name}
+                loading="lazy"
+                onError={(e)=>{
+                  e.target.onerror = null;
+                  e.target.src = placeholder;
+                }}
                 className="w-20 h-20 object-cover rounded"
               />
               <div>

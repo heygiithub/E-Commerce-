@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import placeholder from  "../../assets/placeholder.png";
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -70,8 +71,13 @@ useEffect(()=> {
           >
             <div className="flex items-center gap-4">
               <img
-                src={item.product?.images?.[0]?.image}
+                src={item.product?.images?.[0]?.image || placeholder}
                 alt={item.product?.name}
+                loading="lazy"
+                onError={(e)=>{
+                  e.target.onerror = null;
+                  e.target.src = placeholder;
+                }}
                 className="w-20 h-20 object-cover rounded"
               />
 

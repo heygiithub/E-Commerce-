@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {useAuth} from "../auth/AuthContext";
 import api from "../api/axios";
+import placeholder from "../assets/placeholder.png";
 import "../App.css";
 
 export default function HomePage() {
@@ -197,8 +198,11 @@ export default function HomePage() {
             className="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition"
           >
             <img
-              src={p.image || "/placeholder.png"}
+              src={p.image || placeholder}
               alt={p.name}
+              onError={(e) => {
+                e.target.src = placeholder;
+              }}
               className="w-full h-48 object-cover rounded-md"
             />
             <h3 className="font-semibold text-lg mt-3">{p.name}</h3>

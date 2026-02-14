@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
+import placeholder from "../../assets/placeholder.png";
 
 export default function VendorOrders() {
   const [orders, setOrders] = useState([]);
@@ -77,8 +78,13 @@ export default function VendorOrders() {
                   {/* PRODUCT */}
                   <td className="p-3 flex items-center gap-3">
                     <img
-                      src={o.image || "/placeholder.png"}
+                      src={o.image || placeholder}
                       alt={o.product}
+                      loading="lazy"
+                      onError={(e)=>{
+                        e.target.onerror = null;
+                        e.target.src = placeholder;
+                      }}
                       className="w-12 h-12 object-cover rounded"
                     />
                     <span className="font-medium">

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import api from "../api/axios";
+import placeholder from "../assets/placeholder.png";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -71,7 +72,7 @@ export default function ProductDetail() {
   }
 
   const mainImage =
-    product.images?.[0]?.image || "/placeholder.png";
+    product.images?.[0]?.image || placeholder;
 
   return (
     <div className="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -83,6 +84,10 @@ export default function ProductDetail() {
           alt={product.name}
           className="w-full h-96 object-cover rounded-lg shadow-lg"
           loading="lazy"
+          onError={(e)=> {
+            e.target.onerror = null;
+            e.target.src = placeholder;
+          }}
         />
       </div>
 
