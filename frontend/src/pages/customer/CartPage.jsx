@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import placeholder from  "../assets/placeholder.png";
+import placeholder from  "../../assets/placeholder.png";
 
 export default function CartPage() {
   const { user } = useAuth();

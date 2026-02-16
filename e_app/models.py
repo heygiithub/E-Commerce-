@@ -5,6 +5,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
 from phonenumber_field.modelfields import PhoneNumberField
+from cloudinary.models import CloudinaryField
 # Base Abstract model 
 
 class BaseModel(models.Model):
@@ -88,7 +89,7 @@ class Product(BaseModel):
     vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,related_name='products',db_index=True)
     category = models.ForeignKey(Category,on_delete=models.SET_NULL,db_index=True,null=True,blank=True)
     name = models.CharField(max_length=255,db_index=True)
-    slug = models.SlugField(max_length=255, blank=True)
+    slug = models.SlugField(max_length=255, db_index=True, blank=True)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10,decimal_places=2,db_index=True)
     stock = models.PositiveIntegerField()
@@ -131,8 +132,16 @@ class Product(BaseModel):
 # ProductImage
 class ProductImage(BaseModel):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name="images",db_index=True)
-    image = models.ImageField(upload_to='products/')
+    image = CloudinaryField('image')
     is_primary = models.BooleanField(default=False,db_index=True)
+    
+    constraints = [
+        models.UniqueConstraint(
+            fields = ['product','is_primary'],
+            condition=models.Q(is_primary=True),
+            name = 'unique_primary_image_per_product'
+        )
+    ]
     
     def __str__(self):
         return f"Image of {self.product.name}"
@@ -153,7 +162,7 @@ class Cart(BaseModel):
 # cartItem
 class CartItem(BaseModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE,related_name="items")
-    product = models.ForeignKey(Product,on_delete=models.CASCADE)
+    product = models.ForeignKey(Product,on_delete=models.CASCADE,db_index=True)
     quantity = models.PositiveIntegerField(default=1)
     
     class Meta:
@@ -178,7 +187,7 @@ ORDER_STATUS = (
 class Order(BaseModel):
     customer = models.ForeignKey(Customer,on_delete=models.CASCADE,related_name='orders')
     address = models.ForeignKey("Address",on_delete=models.SET_NULL,null=True,blank=True)
-    total_amount = models.DecimalField(max_digits=10,decimal_places=2)
+    total_amount = models.DecimalField(max_digits=10,decimal_places=2,default =Decimal('0'))
     status = models.CharField(max_length=20, choices=ORDER_STATUS,default='pending')
     is_active = models.BooleanField(default=True)
     
@@ -201,10 +210,10 @@ class Order(BaseModel):
 class OrderItem(BaseModel):
     order = models.ForeignKey(Order,on_delete=models.CASCADE,related_name="items")
     product = models.ForeignKey(Product,on_delete=models.CASCADE)
-    vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,null=True,blank=True)
+    vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,null=True,blank=True,db_index=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10,decimal_places=2)
-    status = models.CharField(max_length=20,default="PLACED")
+    status = models.CharField(max_length=20,default="PENDING")
     
     class Meta:
         unique_together = ('order','product')
@@ -212,7 +221,7 @@ class OrderItem(BaseModel):
 
     
     def subtotal(self):
-        return self.product.price * self.quantity
+        return self.price * self.quantity
     
     def __str__(self):
         return f"{self.product.name} X {self.quantity}"
@@ -247,6 +256,11 @@ class Address(BaseModel):
     state = models.CharField(max_length=100)
     pincode = models.CharField(max_length=10)
     is_default = models.BooleanField(default=False)
+    
+    def save(self,*args, **kwargs):
+        if self.is_default:
+            Address.objects.filter(customer=self.customer, is_default=True).update(is_default=False)
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.line}, {self.city}"

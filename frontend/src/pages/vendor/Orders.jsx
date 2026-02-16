@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
-import placeholder from "../assets/placeholder.png";
+import placeholder from "../../assets/placeholder.png";
 
 export default function VendorOrders() {
   const [orders, setOrders] = useState([]);

@@ -2,7 +2,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
-import placeholder from "../assets/placeholder.png";
+import placeholder from "../../assets/placeholder.png";
 
 export default function OrderPage() {
   const { user } = useAuth();

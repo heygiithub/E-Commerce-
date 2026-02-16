@@ -28,13 +28,12 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         fields = ['id','order_id','product','customer','quantity','total_amount','status','price','image']
         
     def get_total_amount(self,obj):
-        return obj.quantity * obj.product.price
+        return obj.quantity * obj.price
     
     def get_image(self,obj):
         primary_image = obj.product.images.filter(is_primary=True).first() or obj.product.images.first()
-        if primary_image:
-            request = self.context.get('request')
-            return request.build_absolute_uri(primary_image.image.url)
+        if primary_image and primary_image.image:
+            return primary_image.image.url
         return None
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -50,26 +49,11 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id','name','slug']
         
 class ProductImageSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
     
     class Meta:
         model = ProductImage
         fields = ['id','product','image','is_primary']
-        read_only_fields = ['id']
-    
-    def get_image(self,obj):
-        request = self.context.get('request')
-        if obj.image and obj.image.name and request:
-            # return full absoluteurl 
-            return request.build_absolute_uri(obj.image.url)
-        return None
-    
-    def to_internal_value(self,data):
-        # allow image to upload while get_image handles read 
-        internal = super().to_internal_value(data)
-        return internal
-    
-    
+        read_only_fields = ['id']   
         
 class ProductListSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -79,10 +63,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         
     def get_image(self,obj):
         primary_image = obj.images.filter(is_primary=True).first() or obj.images.first()
-        if primary_image and primary_image.image and primary_image.image.name:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(primary_image.image.url)
+        if primary_image and primary_image.image:
             return primary_image.image.url
         return None      
 
@@ -97,17 +78,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id','vendor','vendor_id','category_id','category','name','slug','description','price','stock','status','is_active','images']
         read_only_fields = ['id','slug','vendor','status','is_active']
-        
-    # handling img url 
-    def to_representation(self,instance):
-        data = super().to_representation(instance)
-        request = self.context.get('request')
-        
-        if request and "images" in data:
-            for img in data['images']:
-                if img.get('image'):
-                    img['image']=request.build_absolute_uri(img['image'])
-        return data 
 
     def create(self,validated_data):
         validated_data["vendor"] = self.context["request"].user.vendor_profile
@@ -125,6 +95,11 @@ class CartItemSerializer(serializers.ModelSerializer):
         if value < 1:
             raise serializers.ValidationError("Quantity must be at least 1.")
         return value
+    
+    def validate_product(self,product):
+        if not product.is_active:
+            raise serializers.ValidationError("Product is not available.")
+        return product
         
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True,read_only = True)
@@ -163,7 +138,7 @@ class OrderSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Order
-        fields = ['id','customer','address','status','total_amount','created_at','items','created_at','updated_at']
+        fields = ['id','customer','address','status','total_amount','items','created_at','updated_at']
         
 class PaymentSerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
@@ -276,9 +251,8 @@ class LoginSerializer(serializers.Serializer):
         if not username  or not password:
             raise serializers.ValidationError("Username and password are required")
         
-        user = User.objects.filter(username=username).first()
-        
-        if user is None or not user.check_password(password):
+        user = authenticate(username=username, password=password)
+        if not user:
             raise serializers.ValidationError("Invalid Username or Password")
         
         # find user role

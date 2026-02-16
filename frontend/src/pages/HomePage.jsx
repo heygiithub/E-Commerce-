@@ -72,6 +72,7 @@ export default function HomePage() {
     return `products/?${params.toString()}`;
   };
 
+  
 
   //Fetch Products (NO infinite loop)
   const fetchProducts = useCallback(async () => {

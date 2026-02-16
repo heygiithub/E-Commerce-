@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import placeholder from "../assets/placeholder.png";
+import placeholder from "../../assets/placeholder.png";
 
 export default function VendorProducts() {
   const [products, setProducts] = useState([]);

@@ -12,12 +12,12 @@ from decimal import Decimal
 from rest_framework.parsers import MultiPartParser,FormParser
 from django.db import transaction
 from django.db.models import F,Prefetch
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied,ValidationError
 from . serializers import VendorProductSerializer,CustomerRegisterSerializer,LoginSerializer,CartSerializer,VendorRegisterSerializer,UserSerializer,OrderSerializer,VendorSerializer,VendorOrderSerializer,AddressSerializer,PaymentSerializer,ProductListSerializer,ProductDetailSerializer,CartItemSerializer,CategorySerializer,CustomerSerializer,OrderItemSerializer,ProductImageSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
-
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 # regiser vendor and customer
 class RegisterVendorView(APIView):
@@ -63,9 +63,13 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             vendor=self.request.user.vendor_profile).prefetch_related("images")
     
     def list(self,request,*args,**kwargs):
-        serializer = ProductListSerializer(
-            self.get_queryset(),many=True,context={'request':request}
-        )
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = ProductListSerializer(page,many=True,context={"request":request})
+            return self.get_paginated_response(serializer.data)
+        serializer = ProductListSerializer(queryset,many=True,context={"request":request})
+        
         return Response(serializer.data)
     
     def perform_create(self,serializer):
@@ -85,29 +89,26 @@ class ProductImageViewSet(viewsets.ModelViewSet):
             qset = qset.filter(product_id=product_id)
         return qset
     
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context 
-    
     
     def perform_create(self, serializer):
         product = serializer.validated_data["product"]
         if product.vendor != self.request.user.vendor_profile:
             raise PermissionDenied("You do not own this product.")
         
-        is_first = not ProductImage.objects.filter(
-            product=product, is_primary=True).exists()
+        if ProductImage.objects.filter(product=product).count() >= 5:
+            raise ValidationError("A product can have a maximum of 5 images.")
+        
+        is_first = not ProductImage.objects.filter(product=product, is_primary=True).exists()
+        
         serializer.save(is_primary=is_first)
         
         
-    
     def perform_update(self,serializer):
         # only one primary image per product
         instance = self.get_object()
-        if self.request.data.get("is_primary")==True:
+        if str(self.request.data.get("is_primary")).lower() == "true":
             ProductImage.objects.filter(product=instance.product).update(is_primary=False)
-        serializer.save()
+        serializer.save(product=instance.product)
 
 # vendor order view
 
@@ -155,7 +156,7 @@ class HomeProductPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
 # for all users 
 
-class ProductListView(viewsets.ModelViewSet):
+class ProductViewSet(ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related('images').order_by('-created_at')
     pagination_class = HomeProductPagination
@@ -191,7 +192,7 @@ class CartView(APIView):
         cart,created = Cart.objects.get_or_create(customer=customer)
         data = request.data.copy()
         # handling duplicate carts items
-        product = Product.objects.get(id=data['product_id'])
+        product = get_object_or_404(Product,id=data['product_id'],is_active=True)
         existing_item = CartItem.objects.filter(cart=cart,product=product).first()
         
         if existing_item:

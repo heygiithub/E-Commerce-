@@ -1,10 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CategoryViewSet, ProductImageViewSet,RegisterCustomerView,VendorProductViewSet, ProductListView,CartView,VendorDashboardView, OrderView,AdminOrderView,CustomerAddressViewSet,LoginView,RegisterVendorView,VendorOrderView
+from .views import CategoryViewSet, ProductImageViewSet,RegisterCustomerView,VendorProductViewSet, ProductViewSet,CartView,VendorDashboardView, OrderView,AdminOrderView,CustomerAddressViewSet,LoginView,RegisterVendorView,VendorOrderView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 # Register viewsets with a router (ProductListView is a ModelViewSet)
 router = DefaultRouter()
-router.register(r'products', ProductListView, basename='products')
+router.register(r'products', ProductViewSet, basename='products')
 router.register(r'vendor/products',VendorProductViewSet,basename='vendor-products')
 router.register(r'categories',CategoryViewSet,basename='categories')
 router.register(r'product-images',ProductImageViewSet,basename='product-images')
