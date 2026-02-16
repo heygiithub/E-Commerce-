@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import placeholder from "../../assets/placeholder.png"
+import placeholder from "../assets/placeholder.png"
 
 export default function CustomerDashboard() {
   const [orders, setOrders] = useState([]);

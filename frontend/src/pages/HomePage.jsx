@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {useAuth} from "../auth/AuthContext";
 import api from "../api/axios";
-import placeholder from "../../assets/placeholder.png";
+import placeholder from "../assets/placeholder.png";
 import "../App.css";
 
 export default function HomePage() {
