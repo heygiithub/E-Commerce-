@@ -53,7 +53,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['id','product','image','is_primary']
-        read_only_fields = ['id']   
+        read_only_fields = ['id','is_primary']   
         
 class ProductListSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()

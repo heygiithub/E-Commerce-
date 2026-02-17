@@ -132,7 +132,7 @@ class Product(BaseModel):
 # ProductImage
 class ProductImage(BaseModel):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name="images",db_index=True)
-    image = CloudinaryField('image')
+    image = models.URLField(max_length=500)
     is_primary = models.BooleanField(default=False,db_index=True)
     
     class Meta:

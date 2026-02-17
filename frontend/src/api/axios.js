@@ -8,16 +8,18 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
 
   const PUBLIC_PATHS= [
-    "products/",
-    "categories/",
-    "register/vendor/",
-    "register/customer/",
-    "login/",
-    "token/"
+    "/products/",
+    "/categories/",
+    "/register/vendor/",
+    "/register/customer/",
+    "/login/",
+    "/token/"
   ];
 
+  const url = "/" + (config.url || "");
   // If public API → DO NOT send token
-  const isPublic = PUBLIC_PATHS.some(path => config.url?.includes(path));
+
+  const isPublic = PUBLIC_PATHS.some(path => url.startsWith(path));
 
   if (!isPublic && token) {
     config.headers.Authorization = `Bearer ${token}`;

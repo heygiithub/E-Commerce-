@@ -1,3 +1,4 @@
+import cloudinary.uploader
 from django.shortcuts import render,get_object_or_404,redirect
 from rest_framework.views import APIView
 from rest_framework import viewsets,filters
@@ -92,15 +93,25 @@ class ProductImageViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         product = serializer.validated_data["product"]
+        # ownership check
         if product.vendor != self.request.user.vendor_profile:
             raise PermissionDenied("You do not own this product.")
-        
+        # max 5 images per product
         if ProductImage.objects.filter(product=product).count() >= 5:
             raise ValidationError("A product can have a maximum of 5 images.")
-        
+        # primary image logic: if no primary image exists for this product, set this one as primary
         is_first = not ProductImage.objects.filter(product=product, is_primary=True).exists()
         
-        serializer.save(is_primary=is_first)
+        # maual cloudinary upload
+        image_file = self.request.FILES.get('image')
+        if not image_file:
+            raise ValidationError("Image file is required.")
+        result = cloudinary.uploader.upload(image_file,folder="products")
+        
+        serializer.save(
+            image=result["secure_url"],
+            is_primary=is_first
+            )
         
         
     def perform_update(self,serializer):
