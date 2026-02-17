@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
   ];
 
   // If public API → DO NOT send token
-  const isPublic = PUBLIC_PATHS.some(path => config.url.startsWith(path));
+  const isPublic = PUBLIC_PATHS.some(path => config.url?.includes(path));
 
   if (!isPublic && token) {
     config.headers.Authorization = `Bearer ${token}`;

@@ -135,13 +135,15 @@ class ProductImage(BaseModel):
     image = CloudinaryField('image')
     is_primary = models.BooleanField(default=False,db_index=True)
     
-    constraints = [
+    class Meta:
+            constraints = [
         models.UniqueConstraint(
-            fields = ['product','is_primary'],
+            fields = ['product'],
             condition=models.Q(is_primary=True),
             name = 'unique_primary_image_per_product'
         )
     ]
+
     
     def __str__(self):
         return f"Image of {self.product.name}"
@@ -213,7 +215,7 @@ class OrderItem(BaseModel):
     vendor = models.ForeignKey(Vendor,on_delete=models.CASCADE,null=True,blank=True,db_index=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10,decimal_places=2)
-    status = models.CharField(max_length=20,default="PENDING")
+    status = models.CharField(max_length=20,default="pending")
     
     class Meta:
         unique_together = ('order','product')
