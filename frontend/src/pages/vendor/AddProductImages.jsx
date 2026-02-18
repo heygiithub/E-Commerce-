@@ -10,7 +10,8 @@ export default function AddProductImages() {
 
   const fetchImages = async () => {
     try {
-      const res = await api.get(`/product-images/?product=${product_id}`);
+      const res = await api.get(`product-images/?product=${product_id}`);
+
       setImages(res.data);
     } catch (error) {
       console.log("Fetch images error:", error.response?.data || error);
@@ -32,7 +33,7 @@ export default function AddProductImages() {
     formData.append("image", selectedFile);
 
     try {
-      await api.post("/product-images/", formData, {
+      await api.post("product-images/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -48,7 +49,7 @@ export default function AddProductImages() {
 
   const deleteImage = async (imgId) => {
     try {
-      await api.delete(`/product-images/${imgId}/`);
+      await api.delete(`product-images/${imgId}/`);
       fetchImages();
     } catch (error) {
       console.log(error);
@@ -57,7 +58,7 @@ export default function AddProductImages() {
 
   const markAsPrimary = async (imgId) => {
     try {
-      await api.patch(`/product-images/${imgId}/`, {
+      await api.patch(`product-images/${imgId}/`, {
         is_primary: true,
       });
       fetchImages();

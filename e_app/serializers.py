@@ -49,7 +49,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id','name','slug']
         
 class ProductImageSerializer(serializers.ModelSerializer):
-    
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
     class Meta:
         model = ProductImage
         fields = ['id','product','image','is_primary']
@@ -64,7 +64,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_image(self,obj):
         primary_image = obj.images.filter(is_primary=True).first() or obj.images.first()
         if primary_image and primary_image.image:
-            return primary_image.image.url
+            return primary_image.image
         return None      
 
 class ProductDetailSerializer(serializers.ModelSerializer):
