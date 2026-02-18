@@ -63,7 +63,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         
     def get_image(self,obj):
         primary_image = obj.images.filter(is_primary=True).first() or obj.images.first()
-        if primary_image and primary_image.image:
+        if primary_image:
             return primary_image.image
         return None      
 
