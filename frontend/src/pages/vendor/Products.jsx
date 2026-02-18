@@ -5,17 +5,25 @@ import placeholder from "../../assets/placeholder.png";
 
 export default function VendorProducts() {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const BACKEND_URL = "http://127.0.0.1:8000";
+
 
   const fetchProducts = async () => {
+    setLoading(true);
     try {
       const res = await api.get("vendor/products/");
-      setProducts(res.data);
+      console.log("Fetched products:", res.data);
+      console.log("first product", res.data.results[0] || res.data[0]);
+      setProducts(res.data.results || res.data);
     } catch (error) {
       console.error("Error loading products", error);
+    } finally {
+      setLoading(false);
     }
   };
+  
+  if (loading) return <h2 className="text-center mt-10">Loading...</h2>;
 
   useEffect(() => {
     fetchProducts();
@@ -23,11 +31,13 @@ export default function VendorProducts() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;
+
+    setProducts(prev => prev.filter(p => p.id !== id));
     try {
       await api.delete(`vendor/products/${id}/`);
-      fetchProducts();
     } catch (error) {
       console.error("Delete failed", error);
+       fetchProducts();
     }
   };
 
@@ -51,6 +61,10 @@ return (
     ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map((p) => {
+          // for debugging image field
+          console.log("product data:",p);
+          console.log("Image field:",p.image);
+
           const primaryImage = p.image;
 
           return (
@@ -63,6 +77,9 @@ return (
                 alt={p.name}
                 loading="lazy"
                 onError={(e)=>{
+                  // image load debugging
+                  console.log("image failed to load for product:",primaryImage);
+      
                   e.target.onerror = null;
                   e.target.src = placeholder;
                 }}
