@@ -8,6 +8,8 @@ export default function AddProductImages() {
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
 
+
+  console.log("Product ID from URL:", product_id);
   const fetchImages = async () => {
     try {
       const res = await api.get(`product-images/?product=${product_id}`);

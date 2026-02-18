@@ -109,6 +109,7 @@ class ProductImageViewSet(viewsets.ModelViewSet):
         result = cloudinary.uploader.upload(image_file,folder="products")
         
         serializer.save(
+            product=product,
             image=result["secure_url"],
             is_primary=is_first
             )
