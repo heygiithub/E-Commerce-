@@ -103,7 +103,7 @@ class ProductImageViewSet(viewsets.ModelViewSet):
         is_first = not ProductImage.objects.filter(product=product, is_primary=True).exists()
         
         # maual cloudinary upload
-        image_file = self.request.FILES.get('image')
+        image_file = serializer.validated_data.get('image_file')
         if not image_file:
             raise ValidationError("Image file is required.")
         result = cloudinary.uploader.upload(image_file,folder="products")

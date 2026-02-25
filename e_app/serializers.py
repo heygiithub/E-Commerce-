@@ -50,10 +50,13 @@ class CategorySerializer(serializers.ModelSerializer):
         
 class ProductImageSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    image = serializers.CharField(read_only=True)
+    image_file = serializers.ImageField(write_only=True,required=False)
+    
     class Meta:
         model = ProductImage
-        fields = ['id','product','image','is_primary']
-        read_only_fields = ['id','is_primary']   
+        fields = ['id','product','image','image_file','is_primary']
+        read_only_fields = ['id','image','is_primary']   
         
 class ProductListSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()

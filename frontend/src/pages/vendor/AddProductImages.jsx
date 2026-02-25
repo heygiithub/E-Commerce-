@@ -32,7 +32,7 @@ export default function AddProductImages() {
 
     const formData = new FormData();
     formData.append("product", product_id);
-    formData.append("image", selectedFile);
+    formData.append("image_file", selectedFile);
 
     try {
       await api.post("product-images/", formData, {
