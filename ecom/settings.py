@@ -20,7 +20,7 @@ SECRET_KEY = config('SECRET_KEY',default = 'django-insecure-change-this-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG',default=True,cast= bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS',default="*").split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS',default="localhost,127.0.0.1").split(',')
 
 
 # Application definition
@@ -131,8 +131,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS':True,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    
-        
+          
 }
 
 # Cache configuration (using in-memory cache for simplicity, can be replaced with Redis or Memcached in production)
@@ -192,28 +191,44 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 
 # CORS HEADERS 
-CORS_ALLOWED_ORIGINS = ["https://frontend-uctm.onrender.com",]
+
+if DEBUG:
+    # allow localhost origins in development
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+else:
+    # allow frontend production origin in production
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
+        default = "https://frontend-uctm.onrender.com"
+    ).split(',')
+    CSRF_TRUSTED_ORIGINS = config(
+        'CSRF_TRUSTED_ORIGINS',
+        default = "https://frontend-uctm.onrender.com"
+    ).split(',')
+
 CORS_ALLOW_CREDENTIALS = True
 
 
-# csrf settings
-CSRF_TRUSTED_ORIGINS = ["https://frontend-uctm.onrender.com",]
+# # csrf settings
+# CSRF_TRUSTED_ORIGINS = ["https://frontend-uctm.onrender.com",]
 
-# LOGGING FOR DUBUGGING
-# LOGGINNG = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler'},
-#     'root':{
-#         'handlers':['console'],
-#         'level':'INFO',},
-#     }
-    
-# }
-
-
+# Security settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

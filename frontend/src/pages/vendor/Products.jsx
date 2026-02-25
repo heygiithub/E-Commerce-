@@ -85,10 +85,10 @@ return (
                 loading="lazy"
                 onError={(e)=>{
                   // image load debugging
-                  console.log("image failed to load for product:",primaryImage);
-      
+
                   e.target.onerror = null;
                   e.target.src = placeholder;
+                  console.log("image failed to load for product:",primaryImage);
                 }}
                 className="w-28 h-28 object-cover rounded-md mb-3"
               />
