@@ -14,10 +14,17 @@ export default function VendorProducts() {
     try {
       const res = await api.get("vendor/products/");
       console.log("Fetched products:", res.data);
-      console.log("first product", res.data.results[0] || res.data[0]);
-      setProducts(res.data.results || res.data);
+      // safe check data exists 
+      const productData = res.data?.results || res.data || [];
+      console.log("Product Data", productData);
+      if (productData.length > 0) {
+        console.log("First product:", productData[0]);
+      }
+      
+      setProducts(productData);
     } catch (error) {
-      console.error("Error loading products", error.response?.data || error.message || error );
+      console.log("Error loading products", error.response?.data || error.message || error );
+      setProducts([]);
     } finally {
       setLoading(false);
     }
