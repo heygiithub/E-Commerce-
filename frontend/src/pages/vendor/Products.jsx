@@ -22,12 +22,12 @@ export default function VendorProducts() {
       setLoading(false);
     }
   };
-  
-  if (loading) return <h2 className="text-center mt-10">Loading...</h2>;
 
   useEffect(() => {
     fetchProducts();
   }, []);
+  
+  if (loading) return <h2 className="text-center mt-10">Loading...</h2>;
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;
