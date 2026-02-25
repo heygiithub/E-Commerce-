@@ -17,7 +17,7 @@ export default function VendorProducts() {
       console.log("first product", res.data.results[0] || res.data[0]);
       setProducts(res.data.results || res.data);
     } catch (error) {
-      console.error("Error loading products", error);
+      console.error("Error loading products", error.response?.data || error.message || error );
     } finally {
       setLoading(false);
     }
